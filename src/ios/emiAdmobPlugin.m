@@ -5,7 +5,6 @@
 #import <Foundation/Foundation.h>
 #import <UserMessagingPlatform/UserMessagingPlatform.h>
 #import <Cordova/CDVViewController.h>
-
 @implementation emiAdmobPlugin
 @synthesize appOpenAd;
 @synthesize bannerView;
@@ -65,7 +64,7 @@ NSString *setKeyword = @"";
         self.globalRequest = [GADRequest request];
         NSLog(@"Using AdMob request");
     }
-    
+
     if (isEnabledKeyword && setKeyword.length > 0) {
             NSArray *keywords = [setKeyword componentsSeparatedByString:@","];
             for (NSString *keyword in keywords) {
@@ -76,12 +75,8 @@ NSString *setKeyword = @"";
                 }
             }
         }
-    
+
 }
-
-
-
-
 
 
 
@@ -103,7 +98,7 @@ NSString *setKeyword = @"";
   [self setUsingAdManagerRequest:setAdRequest];
   [self isResponseInfo:responseInfo];
   [self isDebugGeography:setDebugGeography];
-    
+
     if (isCustomConsentManager) {
         [self startGoogleMobileAdsSDK];
         [self fireEvent:@"" event:@"on.custom.consent.manager.used" withData:nil];
@@ -114,8 +109,8 @@ NSString *setKeyword = @"";
   NSString *callbackId = command.callbackId;
   NSString *deviceId = [self __getAdMobDeviceId];
   UMPRequestParameters *parameters = [[UMPRequestParameters alloc] init];
-    
-   
+
+
   if (setDebugGeography) {
     UMPDebugSettings *debugSettings = [[UMPDebugSettings alloc] init];
     parameters.debugSettings = debugSettings;
@@ -155,7 +150,7 @@ NSString *setKeyword = @"";
             }];
           }
 
-  
+
           if (UMPConsentInformation.sharedInstance.canRequestAds) {
             [self startGoogleMobileAdsSDK];
           }
@@ -178,40 +173,33 @@ NSString *setKeyword = @"";
 
 
 - (void)requestIDFA:(CDVInvokedUrlCommand *)command {
-    __block CDVPluginResult *pluginResult;
-    NSString *callbackId = command.callbackId;
-    
-    if (@available(iOS 14, *)) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            // Added a 1-second pause before performing a tracking authorization request
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1 * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
-                
-                [ATTrackingManager requestTrackingAuthorizationWithCompletionHandler:^(ATTrackingManagerAuthorizationStatus status) {
-                    if (status == ATTrackingManagerAuthorizationStatusDenied) {
-                        attStatus = ATTrackingManagerAuthorizationStatusDenied;
-                    } else if (status == ATTrackingManagerAuthorizationStatusAuthorized) {
-                        attStatus = ATTrackingManagerAuthorizationStatusAuthorized;
-                    } else if (status == ATTrackingManagerAuthorizationStatusRestricted) {
-                        attStatus = ATTrackingManagerAuthorizationStatusRestricted;
-                    } else if (status == ATTrackingManagerAuthorizationStatusNotDetermined) {
-                        attStatus = ATTrackingManagerAuthorizationStatusNotDetermined;
-                    }
-                    [self fireEvent:@"" event:@"on.getIDFA.status" withData:nil];
-                    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsInt:attStatus];
-                    [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
-                }];
-            });
-        });
-    } else {
-        [self fireEvent:@"" event:@"on.getIDFA.error" withData:nil];
-        
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"iOS 14+ not found"];
-        [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
-    }
+  CDVPluginResult *pluginResult;
+  NSString *callbackId = command.callbackId;
+  if (@available(iOS 14, *)) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [ATTrackingManager requestTrackingAuthorizationWithCompletionHandler:^(
+                             ATTrackingManagerAuthorizationStatus status) {
+        if (status == ATTrackingManagerAuthorizationStatusDenied) {
+          attStatus = ATTrackingManagerAuthorizationStatusDenied;
+        } else if (status == ATTrackingManagerAuthorizationStatusAuthorized) {
+          attStatus = ATTrackingManagerAuthorizationStatusAuthorized;
+        } else if (status == ATTrackingManagerAuthorizationStatusRestricted) {
+          attStatus = ATTrackingManagerAuthorizationStatusRestricted;
+        } else if (status ==
+                   ATTrackingManagerAuthorizationStatusNotDetermined) {
+          attStatus = ATTrackingManagerAuthorizationStatusNotDetermined;
+        }
+      }];
+    });
+      [self fireEvent:@"" event:@"on.getIDFA.status" withData:nil];
+    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
+                                        messageAsInt:attStatus];
+  } else {
+      [self fireEvent:@"" event:@"on.getIDFA.error" withData:nil];
+    pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR];
+  }
+  [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
 }
-
-
-
 
 - (void)startGoogleMobileAdsSDK {
   static dispatch_once_t onceToken;
@@ -409,29 +397,29 @@ NSString *setKeyword = @"";
 - (void)getIabTfc:(CDVInvokedUrlCommand *)command {
     CDVPluginResult *pluginResult;
     NSString *callbackId = command.callbackId;
-    
+
 
         NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
         NSUserDefaults *prefs = [NSUserDefaults standardUserDefaults];
-        
+
         NSNumber *CmpSdkID = [prefs valueForKey:@"IABTCF_CmpSdkID"];
         NSString *gdprApplies = [prefs stringForKey:@"IABTCF_gdprApplies"];
         NSString *PurposeConsents = [prefs stringForKey:@"IABTCF_PurposeConsents"];
         NSString *TCString = [prefs stringForKey:@"IABTCF_TCString"];
-        
+
         result[@"IABTCF_CmpSdkID"] = CmpSdkID;
         result[@"IABTCF_gdprApplies"] = gdprApplies;
         result[@"IABTCF_PurposeConsents"] = PurposeConsents;
         result[@"IABTCF_TCString"] = TCString;
-        
+
         [prefs synchronize];
-        
+
         NSLog(@"%@", [prefs dictionaryRepresentation]);
-        
+
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:result];
         [self fireEvent:@"" event:@"onGetIabTfc" withData:nil];
-    
-    
+
+
     [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
 }
 
@@ -517,22 +505,22 @@ NSString *setKeyword = @"";
            selector:@selector(orientationDidChange:)
                name:UIDeviceOrientationDidChangeNotification
              object:nil];
-    
+
     NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
     NSUserDefaults *prefs = [NSUserDefaults standardUserDefaults];
-    
+
     NSNumber *CmpSdkID = [prefs valueForKey:@"IABTCF_CmpSdkID"];
     NSString *gdprApplies = [prefs stringForKey:@"IABTCF_gdprApplies"];
     NSString *PurposeConsents = [prefs stringForKey:@"IABTCF_PurposeConsents"];
     NSString *TCString = [prefs stringForKey:@"IABTCF_TCString"];
-    
+
     result[@"IABTCF_CmpSdkID"] = CmpSdkID;
     result[@"IABTCF_gdprApplies"] = gdprApplies;
     result[@"IABTCF_PurposeConsents"] = PurposeConsents;
     result[@"IABTCF_TCString"] = TCString;
-    
+
     // NSLog(@"%@", [[NSUserDefaults standardUserDefaults] dictionaryRepresentation]);
-    
+
     [prefs synchronize];
 }
 
@@ -550,9 +538,9 @@ NSString *setKeyword = @"";
             [self.bannerView removeFromSuperview];
           }
         }
-          
+
         [self setAdRequest];
-          
+
 
         self.bannerViewLayout = [[UIView alloc] initWithFrame:CGRectZero];
         self.bannerViewLayout.translatesAutoresizingMaskIntoConstraints = NO;
@@ -570,7 +558,7 @@ NSString *setKeyword = @"";
           [self.bannerViewLayout.trailingAnchor
               constraintEqualToAnchor:rootView.trailingAnchor]
               .active = YES;
-            [self.bannerViewLayout.heightAnchor constraintEqualToConstant:bannerHeightFinal]
+          [self.bannerViewLayout.heightAnchor constraintEqualToConstant:50]
               .active = YES;
         }
 
@@ -584,21 +572,9 @@ NSString *setKeyword = @"";
 
         [self.bannerViewLayout addSubview:self.bannerView];
         [self.bannerViewLayout bringSubviewToFront:self.bannerView];
-          
-          if (isSetOverlapping) {
-              
-              if (auto_Show && self.bannerView) {
-                  if (isSetOverlapping){
-                      self.bannerView.hidden = NO;
-                      [self setBodyHeight:self.command];
-                 }
-              }
-
-              
-          }
 
       } @catch (NSException *exception) {
-          NSLog(@"Exception: %@", exception.reason);
+       //  banner size: %@", exception.reason]);
       }
     });
   }
@@ -620,7 +596,7 @@ NSString *setKeyword = @"";
   bannerSaveAdUnitId = adUnitId;
 
   setPosition = position;
-    
+
   adFormat = 5;
 
   if (adUnitId == nil || [adUnitId length] == 0) {
@@ -639,12 +615,12 @@ NSString *setKeyword = @"";
   if (autoResize) {
     isAutoResize = YES;
   }
-    
+
   [self setAdRequest];
 
   if (adFormat == 5) {
     dispatch_async(dispatch_get_main_queue(), ^{
-      UIView *parentView = self.viewController.view;
+      UIView *parentView = [self.webView superview];
       CGRect frame = self.bannerView.frame;
 
       if (@available(iOS 11.0, *)) {
@@ -653,20 +629,20 @@ NSString *setKeyword = @"";
       }
 
       self.viewWidth = frame.size.width;
-        
+
       auto_Show = autoShow;
       adWidth = self.viewWidth;
 
       GADAdSize siz = [self __AdSizeFromString:size];
       self.bannerView = [[GADBannerView alloc] initWithAdSize:siz];
-        
+
       GADExtras *extras = [[GADExtras alloc] init];
 
       if (isCollapsible) {
         extras.additionalParameters = @{@"collapsible" : collapsible};
-          
+
         [self.globalRequest registerAdNetworkExtras:extras];
-          
+
       }
 
       self.bannerView.adUnitID = adUnitId;
@@ -674,10 +650,8 @@ NSString *setKeyword = @"";
       self.bannerView.delegate = self;
       [self.bannerView loadRequest:self.globalRequest];
       self.bannerView.hidden = YES;
-      if (![parentView.subviews containsObject:self.bannerView]) {
-         [parentView addSubview:self.bannerView];
-         [parentView bringSubviewToFront:self.bannerView];
-      }
+      [parentView addSubview:self.bannerView];
+      [parentView bringSubviewToFront:self.bannerView];
     });
 
     pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
@@ -694,10 +668,7 @@ NSString *setKeyword = @"";
     @try {
         if (self.bannerView) {
             self.bannerView.hidden = NO;
-            if (isSetOverlapping){
-                [self setBodyHeight:command];
-            }
-   
+            [self addBannerViewToView:command];
         } else {
             [self fireEvent:@"" event:@"on.banner.failed.show" withData:nil];
         }
@@ -708,124 +679,143 @@ NSString *setKeyword = @"";
 }
 
 
-- (UIView*)findWebViewInView:(UIView*)view {
-    if ([view isKindOfClass:NSClassFromString(@"WKWebView")] || [view isKindOfClass:NSClassFromString(@"UIWebView")]) {
-        return view;
-    }
+- (void)addBannerViewToView:(CDVInvokedUrlCommand *)command {
+  bannerView.translatesAutoresizingMaskIntoConstraints = NO;
+  [self.viewController.view addSubview:bannerView];
+  if ([setPosition isEqualToString:@"bottom-center"]) {
+    [self.viewController.view addConstraints:@[
+      [NSLayoutConstraint
+          constraintWithItem:bannerView
+                   attribute:NSLayoutAttributeBottom
+                   relatedBy:NSLayoutRelationEqual
+                      toItem:self.viewController.view.safeAreaLayoutGuide
+                   attribute:NSLayoutAttributeBottom
+                  multiplier:1
+                    constant:0],
+      [NSLayoutConstraint constraintWithItem:bannerView
+                                   attribute:NSLayoutAttributeCenterX
+                                   relatedBy:NSLayoutRelationEqual
+                                      toItem:self.viewController.view
+                                   attribute:NSLayoutAttributeCenterX
+                                  multiplier:1
+                                    constant:0]
+    ]];
+  } else if ([setPosition isEqualToString:@"top-center"]) {
+    [self.viewController.view addConstraints:@[
+      [NSLayoutConstraint
+          constraintWithItem:bannerView
+                   attribute:NSLayoutAttributeTop
+                   relatedBy:NSLayoutRelationEqual
+                      toItem:self.viewController.view.safeAreaLayoutGuide
+                   attribute:NSLayoutAttributeTop
+                  multiplier:1
+                    constant:0],
+      [NSLayoutConstraint constraintWithItem:bannerView
+                                   attribute:NSLayoutAttributeCenterX
+                                   relatedBy:NSLayoutRelationEqual
+                                      toItem:self.viewController.view
+                                   attribute:NSLayoutAttributeCenterX
+                                  multiplier:1
+                                    constant:0]
+    ]];
 
-    for (UIView* subview in view.subviews) {
-        UIView* found = [self findWebViewInView:subview];
-        if (found) {
-            return found;
-        }
+  } else {
+    [self.viewController.view addConstraints:@[
+      [NSLayoutConstraint
+          constraintWithItem:bannerView
+                   attribute:NSLayoutAttributeBottom
+                   relatedBy:NSLayoutRelationEqual
+                      toItem:self.viewController.view.safeAreaLayoutGuide
+                   attribute:NSLayoutAttributeTop
+                  multiplier:1
+                    constant:0],
+      [NSLayoutConstraint constraintWithItem:bannerView
+                                   attribute:NSLayoutAttributeCenterX
+                                   relatedBy:NSLayoutRelationEqual
+                                      toItem:self.viewController.view
+                                   attribute:NSLayoutAttributeCenterX
+                                  multiplier:1
+                                    constant:0]
+    ]];
+  }
+    if (isSetOverlapping){
+        [self bannerOverlapping];
     }
-
-    return nil;
 }
 
 
-- (void)setBodyHeight:(CDVInvokedUrlCommand*)command {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        @try {
 
-            UIWindow *keyWindow = [UIApplication sharedApplication].delegate.window;
-            UIViewController* rootViewController = keyWindow.rootViewController;
 
-            if (!rootViewController) {
-                CDVPluginResult* errorResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Root ViewController not found"];
-                [self.commandDelegate sendPluginResult:errorResult callbackId:command.callbackId];
-                return;
+
+- (void)bannerOverlapping {
+    if (!self.bannerView || !self.webView) {
+        NSLog(@"[AdPlugin] Error: Missing bannerView or webView. Adjustment skipped.");
+        return;
+    }
+    
+    if (isSetOverlapping){
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            @try {
+
+                CGFloat screenWidth = UIScreen.mainScreen.bounds.size.width;
+                CGFloat screenHeight = UIScreen.mainScreen.bounds.size.height;
+                
+                CGFloat navigationBarHeight = 0.0;
+                if (@available(iOS 11.0, *)) {
+                    navigationBarHeight = self.viewController.view.safeAreaInsets.bottom;
+                }
+                
+                if (!self.bannerContainer) {
+                    self.bannerContainer = [[UIView alloc] initWithFrame:CGRectZero];
+                   // self.bannerContainer.backgroundColor = [UIColor redColor]; // Debug
+                    [self.viewController.view addSubview:self.bannerContainer];
+                }
+                
+                if (!self.webViewContainer) {
+                    self.webViewContainer = [[UIView alloc] initWithFrame:CGRectZero];
+                    // self.webViewContainer.backgroundColor = [UIColor blueColor]; // Debug
+                    [self.viewController.view addSubview:self.webViewContainer];
+                }
+                
+                CGRect bannerContainerFrame = CGRectZero;
+                if ([setPosition isEqualToString:@"top-center"]) {
+                    bannerContainerFrame = CGRectMake(0, 0, screenWidth, bannerHeightFinal);
+                } else if ([setPosition isEqualToString:@"bottom-center"]) {
+                    bannerContainerFrame = CGRectMake(0, screenHeight - paddingWebView - bannerHeightFinal - navigationBarHeight, screenWidth, bannerHeightFinal);
+                }
+                self.bannerContainer.frame = bannerContainerFrame;
+                
+                self.bannerView.frame = self.bannerContainer.bounds;
+                [self.bannerContainer addSubview:self.bannerView];
+                
+                CGRect webViewContainerFrame = CGRectZero;
+                if ([setPosition isEqualToString:@"top-center"]) {
+                    webViewContainerFrame = CGRectMake(0, bannerHeightFinal, screenWidth, screenHeight - bannerHeightFinal);
+                } else if ([setPosition isEqualToString:@"bottom-center"]) {
+                    
+                    webViewContainerFrame = CGRectMake(0, 0, screenWidth, screenHeight - bannerHeightFinal - paddingWebView - navigationBarHeight);
+                    
+                }
+                self.webViewContainer.frame = webViewContainerFrame;
+                
+                self.webView.frame = self.webViewContainer.bounds;
+                [self.webViewContainer addSubview:self.webView];
+                
+                [self.bannerContainer setNeedsLayout];
+                [self.bannerContainer layoutIfNeeded];
+                [self.webViewContainer setNeedsLayout];
+                [self.webViewContainer layoutIfNeeded];
+                
+                
+                NSLog(@"[AdPlugin] Banner and WebView are now in separate containers with proper sizing.");
+            } @catch (NSException *exception) {
+                NSLog(@"[AdPlugin] Error adjusting layout for banner and WebView: %@", exception.reason);
             }
             
-           
-            [rootViewController.view setNeedsLayout];
-            [rootViewController.view layoutIfNeeded];
-
-            UIEdgeInsets safeAreaInsets = rootViewController.view.safeAreaInsets;
-
-            if (safeAreaInsets.bottom == 0) {
-                safeAreaInsets = keyWindow.safeAreaInsets;
-            }
-
-            CGFloat screenHeight = UIScreen.mainScreen.bounds.size.height;
-            CGFloat screenWidth = UIScreen.mainScreen.bounds.size.width;
-            CGFloat bannerHeight = bannerHeightFinal;
-            CGFloat newHeight = screenHeight - bannerHeight;
-           
-
-            if (newHeight <= 0) {
-           
-                CDVPluginResult* errorResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Invalid new height"];
-                [self.commandDelegate sendPluginResult:errorResult callbackId:command.callbackId];
-                return;
-            }
-
-            UIView *webView = [self findWebViewInView:rootViewController.view];
-            if (webView) {
-                CGRect webViewFrame = webView.frame;
-                webViewFrame.size.height = newHeight;
-                webView.frame = webViewFrame;
-            } else {
-                NSLog(@"[CordovaBodyHeight] WebView not found");
-            }
-
-            if ([setPosition isEqualToString:@"top-center"]) {
-                            CGRect currentBannerFrame = self.bannerView.frame;
-                            CGFloat expectedYPosition = safeAreaInsets.top;
-
-                            if (fabs(currentBannerFrame.origin.y - expectedYPosition) > 0.1) {
-                                CGRect bannerFrame = CGRectMake(0, expectedYPosition, screenWidth, bannerHeight);
-                                self.bannerView.frame = bannerFrame;
-                                CGRect contentFrame = rootViewController.view.frame;
-                                contentFrame.origin.y = bannerHeight + safeAreaInsets.top;
-                                contentFrame.size.height = screenHeight - (bannerHeight + safeAreaInsets.top);
-                                rootViewController.view.frame = contentFrame;
-             }
-            } else if ([setPosition isEqualToString:@"bottom-center"]) {
-
-                CGRect bannerFrame = CGRectMake(
-                    0,
-                    screenHeight - bannerHeight - safeAreaInsets.bottom + paddingWebView,
-                    screenWidth,
-                    bannerHeight
-                );
-                self.bannerView.frame = bannerFrame;
-
-                CGRect contentFrame = rootViewController.view.frame;
-                contentFrame.origin.y = 0;
-                contentFrame.size.height = screenHeight - (bannerHeight + safeAreaInsets.bottom);
-                rootViewController.view.frame = contentFrame;
-
-            } else {
-                CGRect bannerFrame = CGRectMake(
-                0,
-                screenHeight - bannerHeight - safeAreaInsets.bottom + paddingWebView,
-                screenWidth,
-                bannerHeight
-            );
-            self.bannerView.frame = bannerFrame;
-
-            CGRect contentFrame = rootViewController.view.frame;
-            contentFrame.origin.y = 0;
-            contentFrame.size.height = screenHeight - (bannerHeight + safeAreaInsets.bottom);
-            rootViewController.view.frame = contentFrame;
-
-            }
-
-                [self.bannerView setNeedsLayout];
-                [self.bannerView layoutIfNeeded];
-                [rootViewController.view setNeedsLayout];
-                [rootViewController.view layoutIfNeeded];
-
-            CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDouble:newHeight];
-            [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
-        }
-        @catch (NSException* exception) {
-            NSLog(@"[CordovaBodyHeight] Exception: %@", exception.reason);
-        }
-    });
+        });
+    }
 }
-
 
 
 - (void)metaData:(CDVInvokedUrlCommand *)command {
@@ -837,7 +827,6 @@ NSString *setKeyword = @"";
     isCustomConsentManager = useCustomConsentManager;
     isEnabledKeyword = useCustomKeyword;
     setKeyword = keywordValue;
-    
 }
 
 
@@ -849,55 +838,7 @@ NSString *setKeyword = @"";
     isSetOverlapping = isOverlapping;
     paddingWebView = paddingContainer;
 
-    dispatch_async(dispatch_get_main_queue(), ^{
-        @try {
-
-            UIWindow *keyWindow = [UIApplication sharedApplication].delegate.window;
-            UIViewController *rootViewController = keyWindow.rootViewController;
-
-            if (!rootViewController) {
-                CDVPluginResult *errorResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Root ViewController not found"];
-                [self.commandDelegate sendPluginResult:errorResult callbackId:command.callbackId];
-                return;
-            }
-
-            UIEdgeInsets safeAreaInsets = rootViewController.view.safeAreaInsets;
-
-            if (safeAreaInsets.bottom == 0) {
-                safeAreaInsets = keyWindow.safeAreaInsets;
-            }
-
-            CGFloat screenHeight = UIScreen.mainScreen.bounds.size.height;
-            CGFloat screenWidth = UIScreen.mainScreen.bounds.size.width;
-
-            NSDictionary *data = @{
-                @"screenHeight": @(screenHeight),
-                @"screenWidth": @(screenWidth),
-                @"safeAreaTop": @(safeAreaInsets.top),
-                @"safeAreaBottom": @(safeAreaInsets.bottom)
-            };
-
-            NSError *jsonError;
-            NSData *jsonData = [NSJSONSerialization dataWithJSONObject:data options:0 error:&jsonError];
-
-            if (jsonError) {
-                CDVPluginResult *errorResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Error converting dictionary to JSON"];
-                [self.commandDelegate sendPluginResult:errorResult callbackId:command.callbackId];
-                return;
-            }
-
-            NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-
-            [self fireEvent:@"" event:@"on.style.banner.ad" withData:jsonString];
-
-
-        } @catch (NSException *exception) {
-            NSLog(@"[CordovaBodyHeight] Exception: %@", exception.reason);
-
-        }
-    });
 }
-
 
 
 - (GADAdSize)__AdSizeFromString:(NSString *)size {
@@ -928,45 +869,31 @@ NSString *setKeyword = @"";
 
 
 
+
+
 - (void)resetWebViewHeight {
+    if (!self.webView) {
+        NSLog(@"[AdPlugin] Error: WebView is missing. Reset skipped.");
+        return;
+    }
+
     dispatch_async(dispatch_get_main_queue(), ^{
-        UIWindow *keyWindow = [UIApplication sharedApplication].delegate.window;
-        UIViewController *rootViewController = keyWindow.rootViewController;
+        @try {
 
-        if (!rootViewController) {
-            NSLog(@"[CordovaBodyHeight] Root ViewController not found on reset");
-            return;
+            CGFloat screenHeightInPx = UIScreen.mainScreen.bounds.size.height;
+
+            CGRect webViewFrame = self.webView.frame;
+            webViewFrame.size.height = screenHeightInPx;
+            self.webView.frame = webViewFrame;
+
+            [self.webView setNeedsLayout];
+            [self.webView layoutIfNeeded];
+
+        } @catch (NSException *exception) {
+            NSLog(@"[AdPlugin] Error resetting WebView height: %@", exception.reason);
         }
-
-        UIEdgeInsets safeAreaInsets = rootViewController.view.safeAreaInsets;
-
-        if (safeAreaInsets.bottom == 0) {
-            safeAreaInsets = keyWindow.safeAreaInsets;
-        }
-
-        CGFloat screenHeight = UIScreen.mainScreen.bounds.size.height;
-
-        CGRect contentFrame = rootViewController.view.frame;
-        contentFrame.origin.y = 0;
-        contentFrame.size.height = screenHeight - safeAreaInsets.bottom;
-        rootViewController.view.frame = contentFrame;
-
-        UIView *webView = [self findWebViewInView:rootViewController.view];
-        if (webView) {
-            CGRect webViewFrame = webView.frame;
-            webViewFrame.origin.y = 0;
-            webViewFrame.size.height = screenHeight - safeAreaInsets.bottom;
-            webView.frame = webViewFrame;
-
-        } else {
-            NSLog(@"[CordovaBodyHeight] WebView not found on reset");
-        }
-
-        [rootViewController.view setNeedsLayout];
-        [rootViewController.view layoutIfNeeded];
     });
 }
-
 
 
 
@@ -985,9 +912,6 @@ NSString *setKeyword = @"";
   }
   [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
 }
-
-
-
 - (void)removeBannerAd:(CDVInvokedUrlCommand *)command {
   CDVPluginResult *pluginResult;
   NSString *callbackId = command.callbackId;
@@ -996,8 +920,8 @@ NSString *setKeyword = @"";
       self.bannerView.hidden = YES;
       [self.bannerView removeFromSuperview];
       self.bannerView = nil;
-     [self resetWebViewHeight];
-     [self fireEvent:@"" event:@"on.banner.remove" withData:nil];
+      [self resetWebViewHeight];
+      [self fireEvent:@"" event:@"on.banner.remove" withData:nil];
     });
     pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
   } else {
@@ -1008,45 +932,45 @@ NSString *setKeyword = @"";
 - (void)loadAppOpenAd:(CDVInvokedUrlCommand *)command {
     CDVPluginResult *pluginResult;
     NSString *callbackId = command.callbackId;
-    
+
     NSDictionary *options = [command.arguments objectAtIndex:0];
     NSString *adUnitId = [options valueForKey:@"adUnitId"];
     BOOL autoShow = [[options valueForKey:@"autoShow"] boolValue];
-    
+
     auto_Show = autoShow;
     adFormat = 1;
     self.appOpenAd = nil;
-    
+
     [self setAdRequest];
-    
+
     if (adFormat == 1) {
         dispatch_async(dispatch_get_main_queue(), ^{
 
             GADExtras *extras = [[GADExtras alloc] init];
             [self.globalRequest registerAdNetworkExtras:extras];
-            
+
             [GADAppOpenAd loadWithAdUnitID:adUnitId request:self.globalRequest completionHandler:^(GADAppOpenAd *ad, NSError *error) {
                 if (error) {
                     // Send load error to event
                     NSDictionary *errorData = @{@"error": error.localizedDescription ?: @"Unknown error"};
                     NSData *errorJsonData = [NSJSONSerialization dataWithJSONObject:errorData options:0 error:nil];
                     NSString *errorJsonString = [[NSString alloc] initWithData:errorJsonData encoding:NSUTF8StringEncoding];
-                    
+
                     [self fireEvent:@"" event:@"on.appOpenAd.failed.loaded" withData:errorJsonString];
                     return;
                 }
-                
+
                 self.appOpenAd = ad;
                 self.appOpenAd.fullScreenContentDelegate = self;
                 [self fireEvent:@"" event:@"on.appOpenAd.loaded" withData:nil];
-                
-                
-                
+
+
+
                 __weak __typeof(self) weakSelf = self;
                 self.appOpenAd.paidEventHandler = ^(GADAdValue *_Nonnull value) {
                     __strong __typeof(weakSelf) strongSelf = weakSelf;
                     if (!strongSelf) return;
-                    
+
                     NSDecimalNumber *adValue = value.value;
                     NSString *currencyCode = value.currencyCode;
                     GADAdValuePrecision precision = value.precision;
@@ -1065,8 +989,8 @@ NSString *setKeyword = @"";
 
                     [strongSelf fireEvent:@"" event:@"on.appOpenAd.revenue" withData:jsonString];
                 };
-                
-                
+
+
                 if (auto_Show) {
                     NSError *presentError = nil;
                     if ([self.appOpenAd canPresentFromRootViewController:self.viewController error:&presentError]) {
@@ -1076,12 +1000,12 @@ NSString *setKeyword = @"";
                         NSDictionary *errorData = @{@"error": presentError.localizedDescription ?: @"Unknown error"};
                         NSData *errorJsonData = [NSJSONSerialization dataWithJSONObject:errorData options:0 error:nil];
                         NSString *errorJsonString = [[NSString alloc] initWithData:errorJsonData encoding:NSUTF8StringEncoding];
-                        
+
                         [self fireEvent:@"" event:@"on.appOpenAd.failed.show" withData:errorJsonString];
                     }
                 }
-                
-                
+
+
                 if (isResponseInfo) {
                     GADResponseInfo *responseInfo = ad.responseInfo;
                     NSMutableArray *adNetworkInfoArray = [NSMutableArray array];
@@ -1104,7 +1028,7 @@ NSString *setKeyword = @"";
                         @"adNetworkInfoArray": adNetworkInfoArray
                     };
 
-                    
+
                     NSError *jsonError = nil;
                     NSData *jsonResponseData = [NSJSONSerialization dataWithJSONObject:responseInfoData options:0 error:&jsonError];
                     if (!jsonError) {
@@ -1114,15 +1038,15 @@ NSString *setKeyword = @"";
                         NSLog(@"Error converting response info to JSON: %@", jsonError.localizedDescription);
                     }
                 }
-                
-                
-                
+
+
+
             }];
         });
-        
+
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
     }
-    
+
     [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
 }
 
@@ -1144,38 +1068,38 @@ NSString *setKeyword = @"";
 - (void)loadInterstitialAd:(CDVInvokedUrlCommand *)command {
     CDVPluginResult *pluginResult;
     NSString *callbackId = command.callbackId;
-    
+
     NSDictionary *options = [command.arguments objectAtIndex:0];
     NSString *adUnitId = [options valueForKey:@"adUnitId"];
     BOOL autoShow = [[options valueForKey:@"autoShow"] boolValue];
-    
+
     auto_Show = autoShow;
     adFormat = 2;
     [self setAdRequest];
     if (adFormat == 2) {
         dispatch_async(dispatch_get_main_queue(), ^{
-            
+
             [GADInterstitialAd loadWithAdUnitID:adUnitId request:self.globalRequest completionHandler:^(GADInterstitialAd *ad, NSError *error) {
                 if (error) {
                     // Send load error to event
                     NSDictionary *errorData = @{@"error": error.localizedDescription ?: @"Unknown error"};
                     NSData *errorJsonData = [NSJSONSerialization dataWithJSONObject:errorData options:0 error:nil];
                     NSString *errorJsonString = [[NSString alloc] initWithData:errorJsonData encoding:NSUTF8StringEncoding];
-                    
+
                     [self fireEvent:@"" event:@"on.interstitial.failed.load" withData:errorJsonString];
                     return;
                 }
-                
+
                 self.interstitial = ad;
                 self.interstitial.fullScreenContentDelegate = self;
                 [self fireEvent:@"" event:@"on.interstitial.loaded" withData:nil];
-                
-                
+
+
                 __weak __typeof(self) weakSelf = self;
                 self.interstitial.paidEventHandler = ^(GADAdValue *_Nonnull value) {
                     __strong __typeof(weakSelf) strongSelf = weakSelf;
                     if (!strongSelf) return;
-                    
+
                     NSDecimalNumber *adValue = value.value;
                     NSString *currencyCode = value.currencyCode;
                     GADAdValuePrecision precision = value.precision;
@@ -1188,14 +1112,14 @@ NSString *setKeyword = @"";
                         @"precision": @(precision),
                         @"adUnitId": adUnitId ?: @""
                     };
-                    
+
                     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:data options:0 error:nil];
                     NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
 
                     [strongSelf fireEvent:@"" event:@"on.interstitial.revenue" withData:jsonString];
                 };
-                
-                
+
+
                 if (auto_Show) {
                     NSError *presentError = nil;
                     if ([self.interstitial canPresentFromRootViewController:self.viewController error:&presentError]) {
@@ -1209,9 +1133,9 @@ NSString *setKeyword = @"";
                     }
                     adFormat = 2;
                 }
-                
-                
-                
+
+
+
                 if (isResponseInfo) {
                     GADResponseInfo *responseInfo = ad.responseInfo;
                     NSMutableArray *adNetworkInfoArray = [NSMutableArray array];
@@ -1234,7 +1158,7 @@ NSString *setKeyword = @"";
                         @"adNetworkInfoArray": adNetworkInfoArray
                     };
 
-                   
+
                     NSError *jsonError = nil;
                     NSData *jsonResponseData = [NSJSONSerialization dataWithJSONObject:responseInfoData options:0 error:&jsonError];
                     if (!jsonError) {
@@ -1244,13 +1168,13 @@ NSString *setKeyword = @"";
                         NSLog(@"Error converting response info to JSON: %@", jsonError.localizedDescription);
                     }
                 }
-                
-                
-                
+
+
+
             }];
         });
     }
-    
+
     pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
 }
@@ -1258,7 +1182,7 @@ NSString *setKeyword = @"";
 - (void)showInterstitialAd:(CDVInvokedUrlCommand *)command {
     CDVPluginResult *pluginResult;
     NSString *callbackId = command.callbackId;
-    
+
     NSError *presentError = nil;
     if (self.interstitial && [self.interstitial canPresentFromRootViewController:self.viewController error:&presentError]) {
         [self.interstitial presentFromRootViewController:self.viewController];
@@ -1269,22 +1193,22 @@ NSString *setKeyword = @"";
         NSDictionary *errorData = @{@"error": presentError.localizedDescription ?: @"Unknown error"};
         NSData *errorJsonData = [NSJSONSerialization dataWithJSONObject:errorData options:0 error:nil];
         NSString *errorJsonString = [[NSString alloc] initWithData:errorJsonData encoding:NSUTF8StringEncoding];
-        
+
         [self fireEvent:@"" event:@"on.interstitial.failed.show" withData:errorJsonString];
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR];
     }
-    
+
     [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
 }
 
 - (void)loadRewardedInterstitialAd:(CDVInvokedUrlCommand *)command {
     CDVPluginResult *pluginResult;
     NSString *callbackId = command.callbackId;
-    
+
     NSDictionary *options = [command.arguments objectAtIndex:0];
     NSString *adUnitId = [options valueForKey:@"adUnitId"];
     BOOL autoShow = [[options valueForKey:@"autoShow"] boolValue];
-    
+
     auto_Show = autoShow;
     adFormat = 4;
     [self setAdRequest];
@@ -1296,22 +1220,22 @@ NSString *setKeyword = @"";
                     NSDictionary *errorData = @{@"error": error.localizedDescription ?: @"Unknown error"};
                     NSData *errorJsonData = [NSJSONSerialization dataWithJSONObject:errorData options:0 error:nil];
                     NSString *errorJsonString = [[NSString alloc] initWithData:errorJsonData encoding:NSUTF8StringEncoding];
-                    
+
                     [self fireEvent:@"" event:@"on.rewardedInt.failed.load" withData:errorJsonString];
                     return;
                 }
-                
+
                 self.rewardedInterstitialAd = ad;
                 isAdSkip = 1;
                 self.rewardedInterstitialAd.fullScreenContentDelegate = self;
                 [self fireEvent:@"" event:@"on.rewardedInt.loaded" withData:nil];
-                
-                
+
+
                 __weak __typeof(self) weakSelf = self;
                 self.rewardedInterstitialAd.paidEventHandler = ^(GADAdValue *_Nonnull value) {
                     __strong __typeof(weakSelf) strongSelf = weakSelf;
                     if (!strongSelf) return;
-                    
+
                     NSDecimalNumber *adValue = value.value;
                     NSString *currencyCode = value.currencyCode;
                     GADAdValuePrecision precision = value.precision;
@@ -1329,14 +1253,14 @@ NSString *setKeyword = @"";
 
                     [strongSelf fireEvent:@"" event:@"on.rewardedInt.revenue" withData:jsonString];
                 };
-                
-                
+
+
                 if (auto_Show) {
                     NSError *presentError = nil;
                     if ([self.rewardedInterstitialAd canPresentFromRootViewController:self.viewController error:&presentError]) {
                         [self.rewardedInterstitialAd presentFromRootViewController:self.viewController userDidEarnRewardHandler:^{
                             GADAdReward *reward = self.rewardedInterstitialAd.adReward;
-                            
+
                             // Prepare reward data as JSON
                             NSDictionary *rewardData = @{
                                 @"rewardType": reward.type,
@@ -1354,11 +1278,11 @@ NSString *setKeyword = @"";
                         NSDictionary *errorData = @{@"error": presentError.localizedDescription ?: @"Unknown error"};
                         NSData *errorJsonData = [NSJSONSerialization dataWithJSONObject:errorData options:0 error:nil];
                         NSString *errorJsonString = [[NSString alloc] initWithData:errorJsonData encoding:NSUTF8StringEncoding];
-                        
+
                         [self fireEvent:@"" event:@"on.rewardedInt.failed.show" withData:errorJsonString];
                     }
-                    
-                    
+
+
                     if (isResponseInfo) {
                         GADResponseInfo *responseInfo = ad.responseInfo;
                         NSMutableArray *adNetworkInfoArray = [NSMutableArray array];
@@ -1381,7 +1305,7 @@ NSString *setKeyword = @"";
                             @"adNetworkInfoArray": adNetworkInfoArray
                         };
 
-                       
+
                         NSError *jsonError = nil;
                         NSData *jsonResponseData = [NSJSONSerialization dataWithJSONObject:responseInfoData options:0 error:&jsonError];
                         if (!jsonError) {
@@ -1391,12 +1315,12 @@ NSString *setKeyword = @"";
                             NSLog(@"Error converting response info to JSON: %@", jsonError.localizedDescription);
                         }
                     }
-                    
+
                 }
             }];
         });
     }
-    
+
     pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
 }
@@ -1404,14 +1328,14 @@ NSString *setKeyword = @"";
 - (void)showRewardedInterstitialAd:(CDVInvokedUrlCommand *)command {
     CDVPluginResult *pluginResult;
     NSString *callbackId = command.callbackId;
-    
+
     NSError *presentError = nil;
     if (self.rewardedInterstitialAd &&
         [self.rewardedInterstitialAd canPresentFromRootViewController:self.viewController error:&presentError]) {
-        
+
         [self.rewardedInterstitialAd presentFromRootViewController:self.viewController userDidEarnRewardHandler:^{
             GADAdReward *reward = self.rewardedInterstitialAd.adReward;
-            
+
             // Prepare reward data as JSON
             NSDictionary *rewardData = @{
                 @"rewardType": reward.type,
@@ -1424,18 +1348,18 @@ NSString *setKeyword = @"";
             [self fireEvent:@"" event:@"on.rewardedInt.userEarnedReward" withData:rewardJsonString];
             NSLog(@"Reward received with currency %@, amount %ld", reward.type, [reward.amount longValue]);
         }];
-        
+
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
     } else {
         // Prepare error data as JSON
         NSDictionary *errorData = @{@"error": presentError.localizedDescription ?: @"Unknown error"};
         NSData *errorJsonData = [NSJSONSerialization dataWithJSONObject:errorData options:0 error:nil];
         NSString *errorJsonString = [[NSString alloc] initWithData:errorJsonData encoding:NSUTF8StringEncoding];
-        
+
         [self fireEvent:@"" event:@"on.rewardedInt.failed.show" withData:errorJsonString];
         pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR];
     }
-    
+
     [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
 }
 
@@ -1463,12 +1387,12 @@ NSString *setKeyword = @"";
                 isAdSkip = 0;
                 self.rewardedAd.fullScreenContentDelegate = self;
                 [self fireEvent:@"" event:@"on.rewarded.loaded" withData:nil];
-                
+
                 __weak __typeof(self) weakSelf = self;
                 self.rewardedAd.paidEventHandler = ^(GADAdValue *_Nonnull value) {
                     __strong __typeof(weakSelf) strongSelf = weakSelf;
                     if (!strongSelf) return;
-                    
+
                     NSDecimalNumber *adValue = value.value;
                     NSString *currencyCode = value.currencyCode;
                     GADAdValuePrecision precision = value.precision;
@@ -1486,8 +1410,8 @@ NSString *setKeyword = @"";
 
                     [strongSelf fireEvent:@"" event:@"on.rewarded.revenue" withData:jsonString];
                 };
-                
-                
+
+
 
                 if (auto_Show) {
                     NSError *presentError = nil;
@@ -1503,7 +1427,7 @@ NSString *setKeyword = @"";
                             NSString *rewardJsonString = [[NSString alloc] initWithData:rewardJsonData encoding:NSUTF8StringEncoding];
                             isAdSkip = 2;
                             [self fireEvent:@"" event:@"on.reward.userEarnedReward" withData:rewardJsonString];
-                        
+
                         }];
                     } else {
                         NSDictionary *errorData = @{@"error": presentError.localizedDescription ?: @"Unknown error"};
@@ -1511,8 +1435,8 @@ NSString *setKeyword = @"";
                         NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
                         [self fireEvent:@"" event:@"on.rewarded.failed.show" withData:jsonString];
                     }
-                    
-                    
+
+
                     if (isResponseInfo) {
                         GADResponseInfo *responseInfo = ad.responseInfo;
                         NSMutableArray *adNetworkInfoArray = [NSMutableArray array];
@@ -1535,7 +1459,7 @@ NSString *setKeyword = @"";
                             @"adNetworkInfoArray": adNetworkInfoArray
                         };
 
-                       
+
                         NSError *jsonError = nil;
                         NSData *jsonResponseData = [NSJSONSerialization dataWithJSONObject:responseInfoData options:0 error:&jsonError];
                         if (!jsonError) {
@@ -1545,8 +1469,8 @@ NSString *setKeyword = @"";
                             NSLog(@"Error converting response info to JSON: %@", jsonError.localizedDescription);
                         }
                     }
-                    
-                    
+
+
                 }
             }];
         });
@@ -1566,14 +1490,14 @@ NSString *setKeyword = @"";
             [self.rewardedAd presentFromRootViewController:self.viewController
                                   userDidEarnRewardHandler:^{
                 GADAdReward *reward = self.rewardedAd.adReward;
-                
+
                 NSDictionary *rewardData = @{
                     @"rewardType": reward.type,
                     @"rewardAmount": [reward.amount stringValue]
                 };
                 NSError *jsonError;
                 NSData *jsonData = [NSJSONSerialization dataWithJSONObject:rewardData options:0 error:&jsonError];
-                
+
                 if (jsonData) {
                     NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
                     [self fireEvent:@"" event:@"on.reward.userEarnedReward" withData:jsonString];
@@ -1583,13 +1507,13 @@ NSString *setKeyword = @"";
 
                 isAdSkip = 2;
                 adFormat = 3;
-           
+
                 NSLog(@"Reward received with currency %@, amount %lf", reward.type, [reward.amount doubleValue]);
             }];
-            
+
             pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
         } else {
-            
+
             pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR];
             NSDictionary *errorData = @{@"error": presentError.localizedDescription ?: @"Unknown error"};
             NSError *jsonError;
@@ -1702,7 +1626,7 @@ NSString *setKeyword = @"";
         NSString *jsonString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
         [self fireEvent:@"" event:@"on.is.collapsible" withData:jsonString];
     }
-    
+
     // Get the banner height
     CGFloat bannerHeight = bannerView.bounds.size.height;
     bannerHeightFinal = bannerHeight;
@@ -1712,25 +1636,22 @@ NSString *setKeyword = @"";
     NSDictionary *bannerLoadData = @{@"height" : @(bannerHeight)};
     NSData *bannerLoadJsonData = [NSJSONSerialization dataWithJSONObject:bannerLoadData options:0 error:&error];
     NSString *bannerLoadJsonString = [[NSString alloc] initWithData:bannerLoadJsonData encoding:NSUTF8StringEncoding];
-    
+
     // Fire the banner load event with the height data
     [self fireEvent:@"" event:@"on.banner.load" withData:bannerLoadJsonString];
-    
+
     if (auto_Show && self.bannerView) {
-        if (isSetOverlapping){
-            self.bannerView.hidden = NO;
-            [self setBodyHeight:command];
-       }
+        [self showBannerAd:command];
     } else {
         [self fireEvent:@"" event:@"on.banner.failed.show" withData:nil];
     }
-    
-    
+
+
     __weak __typeof(self) weakSelf = self;
     self.bannerView.paidEventHandler = ^(GADAdValue *_Nonnull value) {
         __strong __typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
-        
+
         NSDecimalNumber *adValue = value.value;
         NSString *currencyCode = value.currencyCode;
         GADAdValuePrecision precision = value.precision;
@@ -1748,9 +1669,9 @@ NSString *setKeyword = @"";
 
         [strongSelf fireEvent:@"" event:@"on.banner.revenue" withData:jsonString];
     };
-    
 
-    
+
+
     if (isResponseInfo) {
         GADResponseInfo *responseInfo = self.bannerView.responseInfo;
         NSMutableArray *adNetworkInfoArray = [NSMutableArray array];
@@ -1773,7 +1694,7 @@ NSString *setKeyword = @"";
             @"adNetworkInfoArray": adNetworkInfoArray
         };
 
-       
+
         NSError *jsonError = nil;
         NSData *jsonResponseData = [NSJSONSerialization dataWithJSONObject:responseInfoData options:0 error:&jsonError];
         if (!jsonError) {
@@ -1783,8 +1704,8 @@ NSString *setKeyword = @"";
             NSLog(@"Error converting response info to JSON: %@", jsonError.localizedDescription);
         }
     }
-    
-    
+
+
 }
 
 - (void)bannerView:(GADBannerView *)bannerView didFailToReceiveAdWithError:(NSError *)error {
@@ -1819,7 +1740,6 @@ NSString *setKeyword = @"";
 
 - (void)bannerViewDidDismissScreen:(GADBannerView *)bannerView {
     [self fireEvent:@"" event:@"on.banner.did.dismiss" withData:nil];
-    
 }
 
 #pragma mark GADFullScreeContentDelegate implementation
@@ -1848,7 +1768,7 @@ NSString *setKeyword = @"";
         @"code": @(error.code),
         @"message": error.localizedDescription
     };
-    
+
     NSError *jsonError;
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:errorData options:0 error:&jsonError];
     NSString *jsonString = jsonData ? [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding] : error.localizedDescription;
@@ -1898,4 +1818,3 @@ NSString *setKeyword = @"";
               object:nil];
 }
 @end
-
